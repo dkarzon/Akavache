@@ -38,9 +38,20 @@ namespace Akavache
             foreach (var ns in namespaces) 
             {
                 var targetType = ns + ".Registrations";
-                string fullName = targetType + ", " + assmName.FullName.Replace(assmName.Name, ns);
-
+                string fullName = targetType +", " + assmName.FullName.Replace(assmName.Name, ns);
+                
+#if WINDOWS_PHONE
+                Assembly assemb = null;
+                try
+                {
+                    assemb = Assembly.Load(ns);
+                }
+                catch { }
+                if (assemb == null) continue;
+                var registerTypeClass = assemb.GetType(targetType, false);
+#else
                 var registerTypeClass = Type.GetType(fullName, false);
+#endif
                 if (registerTypeClass == null) continue;
 
                 var registerer = (IWantsToRegisterStuff)Activator.CreateInstance(registerTypeClass);

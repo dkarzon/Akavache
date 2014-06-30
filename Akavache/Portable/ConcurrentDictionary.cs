@@ -32,7 +32,7 @@ using System.Diagnostics;
 namespace Akavache.Internal
 {
     [DebuggerDisplay("Count={Count}")]
-    internal class ConcurrentDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
+    public class ConcurrentDictionary<TKey, TValue> : IDictionary<TKey, TValue>,
       ICollection<KeyValuePair<TKey, TValue>>, IEnumerable<KeyValuePair<TKey, TValue>>,
       IDictionary, ICollection, IEnumerable
     {

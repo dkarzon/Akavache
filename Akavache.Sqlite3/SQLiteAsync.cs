@@ -37,196 +37,227 @@ namespace Akavache.Sqlite3.Internal
 {
     internal interface IAsyncTableQuery<T> where T : new()
     {
-        IAsyncTableQuery<T> Where (Expression<Func<T, bool>> predExpr);
-        IAsyncTableQuery<T> Skip (int n);
-        IAsyncTableQuery<T> Take (int n);
-        IAsyncTableQuery<T> OrderBy<U> (Expression<Func<T, U>> orderExpr);
-        IAsyncTableQuery<T> OrderByDescending<U> (Expression<Func<T, U>> orderExpr);
-        IObservable<List<T>> ToListAsync ();
-        IObservable<int> CountAsync ();
-        IObservable<T> ElementAtAsync (int index);
-        IObservable<T> FirstAsync ();
-        IObservable<T> FirstOrDefaultAsync ();
+        IAsyncTableQuery<T> Where(Expression<Func<T, bool>> predExpr);
+        IAsyncTableQuery<T> Skip(int n);
+        IAsyncTableQuery<T> Take(int n);
+        IAsyncTableQuery<T> OrderBy<U>(Expression<Func<T, U>> orderExpr);
+        IAsyncTableQuery<T> OrderByDescending<U>(Expression<Func<T, U>> orderExpr);
+        IObservable<List<T>> ToListAsync();
+        IObservable<int> CountAsync();
+        IObservable<T> ElementAtAsync(int index);
+        IObservable<T> FirstAsync();
+        IObservable<T> FirstOrDefaultAsync();
     }
 
-    public class SQLiteAsyncConnection
+    public partial class SQLiteAsyncConnection
     {
         SQLiteConnectionString _connectionString;
         SQLiteConnectionPool _pool;
-        SQLiteOpenFlags _flags;
+        SQLiteOpenFlags _openFlags;
 
-        public SQLiteAsyncConnection (string databasePath, SQLiteOpenFlags? flags = null, bool storeDateTimeAsTicks = false)
+        public SQLiteAsyncConnection(string databasePath, bool storeDateTimeAsTicks = false)
+            : this(databasePath, SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.NoMutex | SQLiteOpenFlags.SharedCache, storeDateTimeAsTicks)
         {
-            _flags = flags ?? (SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.NoMutex | SQLiteOpenFlags.SharedCache);
-
-            _connectionString = new SQLiteConnectionString (databasePath, storeDateTimeAsTicks);
-            _pool = new SQLiteConnectionPool(_connectionString, _flags);
         }
 
-        public IObservable<CreateTablesResult> CreateTableAsync<T> ()
-            where T : new ()
+        public SQLiteAsyncConnection(string databasePath, SQLiteOpenFlags openFlags, bool storeDateTimeAsTicks = false)
         {
-            return CreateTablesAsync (typeof (T));
+            _openFlags = openFlags;
+            _connectionString = new SQLiteConnectionString(databasePath, storeDateTimeAsTicks);
+            _pool = new SQLiteConnectionPool(_connectionString, _openFlags);
         }
 
-        public IObservable<CreateTablesResult> CreateTablesAsync<T, T2> ()
-            where T : new ()
-            where T2 : new ()
+        public IObservable<CreateTablesResult> CreateTableAsync<T>()
+            where T : new()
         {
-            return CreateTablesAsync (typeof (T), typeof (T2));
+            return CreateTablesAsync(typeof(T));
         }
 
-        public IObservable<CreateTablesResult> CreateTablesAsync<T, T2, T3> ()
-            where T : new ()
-            where T2 : new ()
-            where T3 : new ()
+        public IObservable<CreateTablesResult> CreateTablesAsync<T, T2>()
+            where T : new()
+            where T2 : new()
         {
-            return CreateTablesAsync (typeof (T), typeof (T2), typeof (T3));
+            return CreateTablesAsync(typeof(T), typeof(T2));
         }
 
-        public IObservable<CreateTablesResult> CreateTablesAsync<T, T2, T3, T4> ()
-            where T : new ()
-            where T2 : new ()
-            where T3 : new ()
-            where T4 : new ()
+        public IObservable<CreateTablesResult> CreateTablesAsync<T, T2, T3>()
+            where T : new()
+            where T2 : new()
+            where T3 : new()
         {
-            return CreateTablesAsync (typeof (T), typeof (T2), typeof (T3), typeof (T4));
+            return CreateTablesAsync(typeof(T), typeof(T2), typeof(T3));
         }
 
-        public IObservable<CreateTablesResult> CreateTablesAsync<T, T2, T3, T4, T5> ()
-            where T : new ()
-            where T2 : new ()
-            where T3 : new ()
-            where T4 : new ()
-            where T5 : new ()
+        public IObservable<CreateTablesResult> CreateTablesAsync<T, T2, T3, T4>()
+            where T : new()
+            where T2 : new()
+            where T3 : new()
+            where T4 : new()
         {
-            return CreateTablesAsync (typeof (T), typeof (T2), typeof (T3), typeof (T4), typeof (T5));
+            return CreateTablesAsync(typeof(T), typeof(T2), typeof(T3), typeof(T4));
         }
 
-        public IObservable<CreateTablesResult> CreateTablesAsync (params Type[] types)
+        public IObservable<CreateTablesResult> CreateTablesAsync<T, T2, T3, T4, T5>()
+            where T : new()
+            where T2 : new()
+            where T3 : new()
+            where T4 : new()
+            where T5 : new()
         {
-            return _pool.EnqueueConnectionOp(conn => {
-                var result = new CreateTablesResult ();
+            return CreateTablesAsync(typeof(T), typeof(T2), typeof(T3), typeof(T4), typeof(T5));
+        }
 
-                foreach (Type type in types) {
-                    int aResult = conn.CreateTable (type);
+        public IObservable<CreateTablesResult> CreateTablesAsync(params Type[] types)
+        {
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                var result = new CreateTablesResult();
+
+                foreach (Type type in types)
+                {
+                    int aResult = conn.CreateTable(type);
                     result.Results[type] = aResult;
                 }
                 return result;
             });
         }
 
-        public IObservable<int> DropTableAsync<T> ()
-            where T : new ()
+        public IObservable<int> DropTableAsync<T>()
+            where T : new()
         {
-            return _pool.EnqueueConnectionOp(conn => {
+            return _pool.EnqueueConnectionOp(conn =>
+            {
                 return conn.DropTable<T>();
             });
         }
 
-        public IObservable<int> InsertAsync (object item)
+        public IObservable<int> InsertAsync(object item)
         {
-            return _pool.EnqueueConnectionOp(conn => {
-                return conn.Insert (item);
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                return conn.Insert(item);
             });
         }
 
-        public IObservable<int> InsertAsync (object item, string extra, Type type)
+        public IObservable<int> InsertAsync(object item, string extra, Type type)
         {
-            return _pool.EnqueueConnectionOp(conn => {
-                return conn.Insert (item, extra, type);
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                return conn.Insert(item, extra, type);
             });
         }
 
 
-        public IObservable<int> UpdateAsync (object item)
+        public IObservable<int> UpdateAsync(object item)
         {
-            return _pool.EnqueueConnectionOp(conn => {
-                return conn.Update (item);
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                return conn.Update(item);
             });
         }
 
-        public IObservable<int> DeleteAsync (object item)
+        public IObservable<int> DeleteAsync(object item)
         {
-            return _pool.EnqueueConnectionOp(conn => {
-                return conn.Delete (item);
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                return conn.Delete(item);
             });
         }
 
         public IObservable<T> Get<T>(object pk)
             where T : new()
         {
-            return _pool.EnqueueConnectionOp<T>(conn => {
+            return _pool.EnqueueConnectionOp<T>(conn =>
+            {
                 return conn.Get<T>(pk);
             });
         }
 
-        public IObservable<T> FindAsync<T> (object pk)
-            where T : new ()
-        {
-            return _pool.EnqueueConnectionOp(conn => {
-                return conn.Find<T> (pk);
-            });
-        }
-        
-        public IObservable<T> Get<T> (Expression<Func<T, bool>> predicate)
+        public IObservable<T> FindAsync<T>(object pk)
             where T : new()
         {
-            return _pool.EnqueueConnectionOp(conn => {
-                return conn.Get<T> (predicate);
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                return conn.Find<T>(pk);
             });
         }
 
-        public IObservable<T> FindAsync<T> (Expression<Func<T, bool>> predicate)
-            where T : new ()
+        public IObservable<T> Get<T>(Expression<Func<T, bool>> predicate)
+            where T : new()
         {
-            return _pool.EnqueueConnectionOp(conn => {
-                return conn.Find<T> (predicate);
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                return conn.Get<T>(predicate);
             });
         }
 
-        public IObservable<int> ExecuteAsync (string query, params object[] args)
+        public IObservable<T> FindAsync<T>(Expression<Func<T, bool>> predicate)
+            where T : new()
         {
-            return _pool.EnqueueConnectionOp(conn => {
-                return conn.Execute (query, args);
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                return conn.Find<T>(predicate);
             });
         }
 
-        public IObservable<int> InsertAllAsync (IEnumerable items, string extra)
+        public IObservable<int> ExecuteAsync(string query, params object[] args)
         {
-            return _pool.EnqueueConnectionOp(conn => {
-                return conn.InsertAll (items, extra);
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                return conn.Execute(query, args);
+            });
+        }
+
+        public IObservable<int> InsertAllAsync(IEnumerable items, string extra)
+        {
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                return conn.InsertAll(items, extra);
+            });
+        }
+
+        public IObservable<int> UpdateAllAsync(IEnumerable items)
+        {
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                return conn.UpdateAll(items);
             });
         }
 
         public IObservable<Unit> RunInTransactionAsync(Action<SQLiteConnection> action)
         {
-            return _pool.EnqueueConnectionOp(conn => {
+            return _pool.EnqueueConnectionOp(conn =>
+            {
                 conn.BeginTransaction();
-                try {
+                try
+                {
                     action(conn);
                     conn.Commit();
                     return Unit.Default;
-                } catch (Exception) {
+                }
+                catch (Exception)
+                {
                     conn.Rollback();
                     throw;
                 }
             });
         }
 
-        public IObservable<T> ExecuteScalarAsync<T> (string sql, params object[] args)
+        public IObservable<T> ExecuteScalarAsync<T>(string sql, params object[] args)
         {
-            return _pool.EnqueueConnectionOp(conn => {
-                var command = conn.CreateCommand (sql, args);
-                return command.ExecuteScalar<T> ();
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                var command = conn.CreateCommand(sql, args);
+                return command.ExecuteScalar<T>();
             });
         }
 
-        public IObservable<List<T>> QueryAsync<T> (string sql, params object[] args)
-            where T : new ()
+        public IObservable<List<T>> QueryAsync<T>(string sql, params object[] args)
+            where T : new()
         {
-            return _pool.EnqueueConnectionOp(conn => {
-                return conn.Query<T> (sql, args);
+            return _pool.EnqueueConnectionOp(conn =>
+            {
+                return conn.Query<T>(sql, args);
             });
         }
 
@@ -240,13 +271,13 @@ namespace Akavache.Sqlite3.Internal
     {
         public Dictionary<Type, int> Results { get; private set; }
 
-        internal CreateTablesResult ()
+        internal CreateTablesResult()
         {
-            this.Results = new Dictionary<Type, int> ();
+            this.Results = new Dictionary<Type, int>();
         }
     }
 
-    public class SQLiteConnectionPool : IDisposable
+    class SQLiteConnectionPool : IDisposable
     {
         readonly int connectionCount;
         readonly Tuple<SQLiteConnectionString, SQLiteOpenFlags> connInfo;
@@ -273,10 +304,10 @@ namespace Akavache.Sqlite3.Internal
                 Reset(true).Wait();
             }
 
-            var makeRq = Observable.Defer(() => 
+            var makeRq = Observable.Defer(() =>
                 Observable.Start(() => operation(conn.Connection), BlobCache.TaskpoolScheduler));
 
-            return opQueue.EnqueueObservableOperation(idx.ToString(), () => 
+            return opQueue.EnqueueObservableOperation(idx.ToString(), () =>
                 makeRq.RetryWithBackoffStrategy(tableLockRetries, retryOnError: ex =>
                 {
                     var sqlex = ex as SQLiteException;
@@ -290,7 +321,7 @@ namespace Akavache.Sqlite3.Internal
         /// <summary>
         /// Closes all connections managed by this pool.
         /// </summary>
-        public IObservable<Unit> Reset (bool shouldReopen = true)
+        public IObservable<Unit> Reset(bool shouldReopen = true)
         {
             var shutdownQueue = Observable.Return(Unit.Default);
 
@@ -299,11 +330,11 @@ namespace Akavache.Sqlite3.Internal
                 shutdownQueue = opQueue.ShutdownQueue();
             }
 
-            return shutdownQueue.Finally(() => 
+            return shutdownQueue.Finally(() =>
             {
                 if (connections != null)
                 {
-                    foreach(var v in connections.Where(x => x != null && x.Connection != null))
+                    foreach (var v in connections.Where(x => x != null && x.Connection != null))
                     {
                         v.OnApplicationSuspended();
                     }
@@ -332,24 +363,24 @@ namespace Akavache.Sqlite3.Internal
             public SQLiteConnectionString ConnectionString { get; private set; }
             public SQLiteConnectionWithoutLock Connection { get; private set; }
 
-            public Entry (SQLiteConnectionString connectionString, SQLiteOpenFlags flags)
+            public Entry(SQLiteConnectionString connectionString, SQLiteOpenFlags flags)
             {
                 ConnectionString = connectionString;
-                Connection = new SQLiteConnectionWithoutLock (connectionString, flags);
+                Connection = new SQLiteConnectionWithoutLock(connectionString, flags);
             }
 
-            public void OnApplicationSuspended ()
+            public void OnApplicationSuspended()
             {
-                Connection.Dispose ();
+                Connection.Dispose();
                 Connection = null;
             }
         }
     }
 
-    public class SQLiteConnectionWithoutLock : SQLiteConnection
+    class SQLiteConnectionWithoutLock : SQLiteConnection
     {
-        public SQLiteConnectionWithoutLock (SQLiteConnectionString connectionString, SQLiteOpenFlags flags)
-            : base (connectionString.DatabasePath, flags, connectionString.StoreDateTimeAsTicks)
+        public SQLiteConnectionWithoutLock(SQLiteConnectionString connectionString, SQLiteOpenFlags flags)
+            : base(connectionString.DatabasePath, flags, connectionString.StoreDateTimeAsTicks)
         {
         }
     }
@@ -359,7 +390,7 @@ namespace Akavache.Sqlite3.Internal
         /// <summary>
         /// An exponential back off strategy which starts with 1 second and then 4, 9, 16...
         /// </summary>
-        public static readonly Func<int, TimeSpan> ExponentialBackoff = 
+        public static readonly Func<int, TimeSpan> ExponentialBackoff =
             n => TimeSpan.FromMilliseconds(Math.Pow(n, 2) * 20);
 
         /// <summary>
@@ -376,7 +407,7 @@ namespace Akavache.Sqlite3.Internal
         /// specified number of times or until it successfully terminates.
         /// </returns>
         public static IObservable<T> RetryWithBackoffStrategy<T>(
-            this IObservable<T> source, 
+            this IObservable<T> source,
             int retryCount = 3,
             Func<int, TimeSpan> strategy = null,
             Func<Exception, bool> retryOnError = null,
@@ -385,7 +416,7 @@ namespace Akavache.Sqlite3.Internal
             strategy = strategy ?? ExponentialBackoff;
             scheduler = scheduler ?? BlobCache.TaskpoolScheduler;
 
-            if (retryOnError == null) 
+            if (retryOnError == null)
             {
                 retryOnError = _ => true;
             }
@@ -400,11 +431,10 @@ namespace Akavache.Sqlite3.Internal
                         ? Observable.Throw<Tuple<bool, T, Exception>>(e)
                         : Observable.Return(new Tuple<bool, T, Exception>(false, default(T), e)));
             })
-            .Retry(retryCount)
+            //.Retry(retryCount)
             .SelectMany(t => t.Item1
                 ? Observable.Return(t.Item2)
                 : Observable.Throw<T>(t.Item3));
         }
     }
 }
-
